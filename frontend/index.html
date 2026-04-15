@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="AI-powered interview simulator — upload your resume, practice with AI-generated questions, and get instant structured feedback." />
+  <title>AI Interview Simulator — Practice Smarter</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎯</text></svg>" />
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+  <div class="app-container">
+
+    <!-- ═══ Header ═══ -->
+    <header class="app-header">
+      <div class="logo-icon">🎯</div>
+      <h1>AI Interview Simulator</h1>
+      <p class="tagline">Upload your resume. Practice with AI. Ace the interview.</p>
+    </header>
+
+    <!-- ═══ Steps Indicator ═══ -->
+    <div class="steps-indicator" id="steps-indicator">
+      <div class="step active" id="step-1">
+        <span class="step-dot">1</span>
+        <span class="step-label">Upload</span>
+      </div>
+      <div class="step-connector" id="connector-1-2"></div>
+      <div class="step active" id="step-2">
+        <span class="step-dot">2</span>
+        <span class="step-label">Interview</span>
+      </div>
+      <div class="step-connector" id="connector-2-3"></div>
+      <div class="step" id="step-3">
+        <span class="step-dot">3</span>
+        <span class="step-label">Results</span>
+      </div>
+    </div>
+
+    <!-- ═══ Section 1: Resume Upload ═══ -->
+    <section class="section-card" id="upload-section">
+      <h2 class="section-title">
+        <span class="icon">📄</span>
+        Upload Your Resume
+      </h2>
+      <p class="section-subtitle">
+        Drop your PDF resume below. Our AI will analyze it and generate tailored interview questions.
+      </p>
+
+      <div class="upload-zone" id="upload-zone" tabindex="0" role="button" aria-label="Upload resume PDF">
+        <span class="upload-icon">📎</span>
+        <p class="upload-text">
+          <strong>Click to browse</strong> or drag & drop your PDF here
+        </p>
+        <p class="upload-text" style="font-size:0.82rem; margin-top:0.25rem; color: var(--text-muted);">
+          Maximum 10 MB · PDF only
+        </p>
+        <input type="file" id="file-input" accept=".pdf" />
+      </div>
+
+      <div class="file-info hidden" id="file-info">
+        <span>✅</span>
+        <span id="file-name">resume.pdf</span>
+        <span id="file-chars" style="margin-left:auto; opacity:0.7;"></span>
+      </div>
+    </section>
+
+    <!-- ═══ Section 2: Interview ═══ -->
+    <section class="section-card" id="interview-section">
+      <h2 class="section-title">
+        <span class="icon">🧠</span>
+        Interview Session
+      </h2>
+
+      <!-- Pre-start state -->
+      <div id="pre-interview">
+        <p class="section-subtitle">
+          Once your resume is uploaded, click below to start your AI-powered mock interview.
+        </p>
+        <button class="btn btn-primary btn-lg btn-full" id="start-btn" disabled>
+          🚀 Start Interview
+        </button>
+      </div>
+
+      <!-- Loading state -->
+      <div id="questions-loading" class="hidden">
+        <p class="section-subtitle" style="margin-bottom:1rem;">Generating personalized questions from your resume…</p>
+        <div class="loading-skeleton">
+          <div class="skeleton skeleton-line"></div>
+          <div class="skeleton skeleton-line"></div>
+          <div class="skeleton skeleton-line"></div>
+        </div>
+      </div>
+
+      <!-- Questions list -->
+      <div id="interview-active" class="hidden">
+        <div class="progress-bar" id="progress-bar">
+          <span class="progress-text" id="progress-text">0 / 5 answered</span>
+          <div class="progress-track">
+            <div class="progress-fill" id="progress-fill" style="width:0%"></div>
+          </div>
+        </div>
+        <div class="questions-list" id="questions-list"></div>
+      </div>
+    </section>
+
+    <!-- ═══ Section 3: Summary ═══ -->
+    <section class="section-card hidden" id="summary-section">
+      <h2 class="section-title">
+        <span class="icon">📊</span>
+        Interview Summary
+      </h2>
+      <div class="summary-card" id="summary-card"></div>
+    </section>
+
+  </div>
+
+  <!-- Toast container -->
+  <div class="toast-container" id="toast-container"></div>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
