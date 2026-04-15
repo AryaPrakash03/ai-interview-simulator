@@ -29,6 +29,7 @@ from pydantic import BaseModel, Field
 from resume_parser import extract_text_from_pdf
 from llm import (
     call_llm,
+    parse_questions_response,
     FALLBACK_MESSAGE,
     SERVICE_BUSY_MESSAGE,
     PRIMARY_MODEL,
@@ -259,51 +260,11 @@ Generate 5 short interview questions for this resume:
 Exact format:
 {{"questions": ["q1", "q2", "q3", "q4", "q5"]}}"""
 
-    raw_response = None
     try:
-        raw_response = await call_llm(prompt, temperature=0.7, max_tokens=1024)
+        raw_response = await call_llm(prompt, temperature=0.7, max_tokens=500)
         logger.info(f"🔍 Raw LLM response ({len(raw_response)} chars): {raw_response[:300]}")
 
-        # Stage 1: Direct parse
-        parsed = None
-        try:
-            parsed = json.loads(raw_response)
-        except json.JSONDecodeError:
-            logger.warning("Stage 1 (direct parse) failed.")
-
-        # Stage 2: Regex extraction
-        if parsed is None:
-            match = re.search(r'\{.*\}', raw_response, re.DOTALL)
-            if match:
-                try:
-                    parsed = json.loads(match.group(0))
-                except json.JSONDecodeError:
-                    logger.warning("Stage 2 (regex extraction) failed.")
-
-        # Stage 3: Truncated JSON repair
-        if parsed is None:
-            logger.warning("Stage 3: Attempting truncated JSON repair...")
-            parsed = _repair_truncated_json(raw_response)
-
-        # Stage 4: Last resort — extract individual questions via regex
-        if parsed is None:
-            logger.warning("Stage 4: Extracting questions via regex fallback...")
-            question_matches = re.findall(r'"question"\s*:\s*"([^"]+)"', raw_response)
-            if not question_matches:
-                # Try to grab any quoted strings that look like questions
-                question_matches = re.findall(r'"([^"]{20,}\?)"', raw_response)
-            if question_matches:
-                parsed = {"questions": question_matches}
-            else:
-                raise ValueError(f"All 4 parse stages failed. Raw: {raw_response[:300]}")
-
-        # Normalize: accept both {"questions": [...]} and bare [...]
-        if isinstance(parsed, list):
-            questions = [q.get("question", str(q)) if isinstance(q, dict) else str(q) for q in parsed]
-        elif isinstance(parsed, dict) and "questions" in parsed:
-            questions = [q.get("question", str(q)) if isinstance(q, dict) else str(q) for q in parsed["questions"]]
-        else:
-            raise ValueError("Unexpected response structure from LLM.")
+        questions = parse_questions_response(raw_response)
 
         store["questions"] = questions
         logger.info(f"✅ Generated {len(questions)} interview questions.")

@@ -205,7 +205,7 @@ async def _call_with_retries(
 
 # ── Public API ─────────────────────────────────────────────────────────────────
 
-async def call_llm(prompt: str, temperature: float = 0.7, max_tokens: int = 2048) -> str:
+async def call_llm(prompt: str, temperature: float = 0.7, max_tokens: int = 500) -> str:
     """
     Send a prompt to Groq with dual-model fallback and retry logic.
 
@@ -239,8 +239,8 @@ async def call_llm(prompt: str, temperature: float = 0.7, max_tokens: int = 2048
         {
             "role": "system",
             "content": (
-                "Return ONLY a valid JSON object. Do not include any introductory text or closing remarks. "
-                "Keep explanations brief to avoid token truncation."
+                "Return ONLY a valid JSON array of strings. Do not use nested objects or categories. "
+                "No preamble. No markdown blocks."
             ),
         },
         {"role": "user", "content": prompt},
@@ -351,9 +351,45 @@ def parse_json_response(text: str) -> dict | list:
 
     # Step 4: Last-ditch — try the original un-cleaned text
     try:
-        return json.loads(text.strip())
-    except json.JSONDecodeError:
         pass
 
     logger.error(f"❌ Failed to parse JSON from LLM response: {text[:500]}")
     raise ValueError(f"Could not parse JSON from LLM response: {text[:200]}...")
+
+
+def parse_questions_response(text: str) -> list[str]:
+    """
+    Specifically parses the array of string questions.
+    Implements aggressive fallback and default generic questions on catastrophic failure.
+    """
+    fallback_questions = [
+        "Tell me about a challenging project you worked on and how you handled it.",
+        "How do you prioritize debugging a critical production issue?",
+        "Describe your experience with the core technologies listed on your resume."
+    ]
+    
+    cleaned = _clean_llm_text(text)
+    
+    try:
+        # First try direct load in case it's perfectly format
+        result = json.loads(cleaned)
+        if isinstance(result, list):
+            return [str(q) for q in result][:5]
+        elif isinstance(result, dict) and "questions" in result:
+            return [str(q) for q in result["questions"]][:5]
+    except json.JSONDecodeError:
+        pass
+        
+    # Regex fallback to find the first array [...]
+    match = re.search(r'\[(.*)\]', cleaned, re.DOTALL)
+    if match:
+        try:
+            # We add brackets back to make it valid JSON array
+            result = json.loads('[' + match.group(1) + ']')
+            if isinstance(result, list):
+                return [str(q) for q in result][:5]
+        except json.JSONDecodeError:
+            pass
+
+    logger.error("❌ parse_questions_response totally failed. Returning generic fallbacks.")
+    return fallback_questions
